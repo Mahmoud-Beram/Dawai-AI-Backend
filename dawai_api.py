@@ -1,11 +1,3 @@
-"""
-Dawai API - Medicine OCR Recognition Server (V10 - RapidOCR)
-=============================================================
-Flutter sends an image → we return medicine info as JSON.
-
-Run:  python dawai_api.py
-Test: http://localhost:8000/docs (Swagger UI)
-"""
 
 import sys
 import os
@@ -21,7 +13,7 @@ from pydantic import BaseModel
 from typing import Optional
 import uvicorn
 
-# Import V10 engine (RapidOCR + RapidFuzz)
+# Import engine (RapidOCR + RapidFuzz)
 from dawai_master import process_image, get_ocr_engines, get_matcher
 from dawai_chatbot import get_chat_response
 
@@ -30,7 +22,7 @@ from dawai_chatbot import get_chat_response
 #####################################################################
 
 print("=" * 50, flush=True)
-print(" DAWAI API V10 - Starting up...", flush=True)
+print(" DAWAI API  - Starting up...", flush=True)
 print("=" * 50, flush=True)
 
 print("[1/2] Loading RapidOCR models (EN+AR)...", flush=True)
@@ -49,7 +41,7 @@ print("\n>>> SERVER READY! <<<\n", flush=True)
 # FastAPI App
 #####################################################################
 
-app = FastAPI(title="Dawai API", description="Medicine OCR Recognition (V10 - RapidOCR)")
+app = FastAPI(title="Dawai API", description="Medicine OCR Recognition ( RapidOCR)")
 
 # Allow Flutter to connect from any origin
 app.add_middleware(
