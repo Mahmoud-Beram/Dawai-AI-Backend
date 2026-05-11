@@ -1,4 +1,3 @@
-
 import sys
 import os
 import time
@@ -41,7 +40,7 @@ print("\n>>> SERVER READY! <<<\n", flush=True)
 # FastAPI App
 #####################################################################
 
-app = FastAPI(title="Dawai API", description="Medicine OCR Recognition ( RapidOCR)")
+app = FastAPI(title="Dawai API", description="Medicine OCR Recognition (RapidOCR)")
 
 # Allow Flutter to connect from any origin
 app.add_middleware(
@@ -73,7 +72,7 @@ async def scan_medicine(file: UploadFile = File(...)):
             content = await file.read()
             f.write(content)
         
-        # Run OCR using V10 (RapidOCR + RapidFuzz)
+        # Run OCR using (RapidOCR + RapidFuzz)
         result_dict = process_image(temp_path)
         
         elapsed = time.time() - start_time
@@ -102,6 +101,7 @@ async def scan_medicine(file: UploadFile = File(...)):
 class ChatRequest(BaseModel):
     message: str
     medicine_id: Optional[int] = None
+    disease_type: Optional[str] = None
 
 @app.post("/chat")
 async def chat_with_bot(payload: ChatRequest):
@@ -122,11 +122,11 @@ async def chat_with_bot(payload: ChatRequest):
         return {"response": "عذراً، رسالتك فارغة!"}
         
     print(f"[API] POST /chat - Query: '{user_msg}'", flush=True)
-    result = get_chat_response(user_msg, context_med)
+    result = get_chat_response(user_msg, context_med, payload.disease_type)
     
     if isinstance(result, str):
         print(f"[CHATBOT] Responded with text: {result[:50]}...", flush=True)
-        return {"response": result, "medicine_id": None}
+        return {"response": result, "medicine_id": None, "disease_type": None}
         
     returned_med_id = None
     if result.get("context_medicine"):
@@ -135,10 +135,11 @@ async def chat_with_bot(payload: ChatRequest):
         if not matcher.db[mask].empty:
             returned_med_id = int(matcher.db[mask].iloc[0]['id'])
             
-    print(f"[CHATBOT] Responded with dict: {result['text'][:50]}... | MedID: {returned_med_id}", flush=True)
+    print(f"[CHATBOT] Responded with dict: {result['text'][:50]}... | MedID: {returned_med_id} | Symptom: {result.get('matched_symptom')}", flush=True)
     return {
         "response": result["text"],
-        "medicine_id": returned_med_id
+        "medicine_id": returned_med_id,
+        "disease_type": result.get("matched_symptom")
     }
 
 @app.get("/health")
