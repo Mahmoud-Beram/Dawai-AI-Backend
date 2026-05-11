@@ -1,3 +1,4 @@
+#   صلي عل النبي 
 import json
 import pandas as pd
 import re
@@ -45,7 +46,7 @@ class DawaiChatbot:
             "ماعنديش", "مش عندي", "مش بشتكي",
             "مش حاسس", "مش فيه", "مش في",
         ]
-
+        #  زيد النبي صلاه   
         # ── [4] Chit-Chat Templates (Expanded & Varied) ──────────────────────
         self.greetings = [
             "أهلاً بيك في صيدلية Dawai!  بتشتكي من إيه النهارده؟",
@@ -53,7 +54,6 @@ class DawaiChatbot:
             "مرحباً بك! أنا المساعد الطبي بتاعك، طمني بتشتكي من إيه؟ ",
             "أهلين وسهلين! كلمني، أنا هنا أساعدك. ",
             "يسعدلي مساك! Dawai معاك دايماً. بتحتاج إيه؟ ",
-            "وعليكم السلام ورحمة الله وبركاته! أقدر أساعدك إزاي؟ ",
             "يا هلا بيك يا فندم! طمني صحتك عاملة إيه؟ ",
             "صباح الفل والورد! تحت أمرك، بتشتكي من حاجة؟ "
         ]
@@ -178,8 +178,9 @@ class DawaiChatbot:
             "اسنان":   "مسكن ومضاد التهاب موضعي لتخفيف آلام الأسنان واللثة.",
         }
 
+        
         # ── Valid Medicine Forms per Symptom ──────────────────────────────────
-        # الجدول ده بيحدد أشكال الدواء المنطقية لكل تصنيف مرضي
+        #   الجدول ده بيحدد أشكال الدواء المنطقية لكل تصنيف مرضي        اهه يضهريي
         self.valid_forms = {
             "صداع":    ["tablets", "syrup", "effervescent", "capsules"],
             "سخونيه": ["tablets", "syrup", "effervescent", "suppositories"],
@@ -248,20 +249,12 @@ class DawaiChatbot:
             self.nlp_model    = None
             self.db_embeddings = None
 
+    #    بقولك اي صلي عل النبي كدا وانت معدي
     # ════════════════════════════════════════════════════════════════════════
     # [1] ADVANCED TEXT NORMALIZATION
     # ════════════════════════════════════════════════════════════════════════
     def clean_text(self, text: str) -> str:
-        """
-        تطبيع شامل للنص العربي المصري:
-          1. إزالة علامات الترقيم
-          2. إزالة كل التشكيل (فتحة، ضمة، كسرة، شدة ...)
-          3. توحيد الهمزات  (أ إ آ ٱ) ← ا
-          4. توحيد التاء المربوطة  ة ← ه
-          5. توحيد الألف المقصورة  ى ← ي
-          6. تطبيع الهمزات الطرفية  ئ ← ي  /  ؤ ← و
-          7. تكسير المط في الحروف  "صداااع" ← "صداع"
-        """
+      
         text = re.sub(r'[^\w\s]', '', text)                      # [1] ترقيم
         text = re.sub(r'[\u064B-\u065F\u0670]', '', text)        # [2] تشكيل
         text = re.sub(r'[أإآٱ]', 'ا', text)                      # [3] همزات
@@ -488,6 +481,9 @@ class DawaiChatbot:
                         "matched_symptom": context_symptom,
                     }
 
+
+        #  م هنموت حد احنااا جرعات اسأل جوجل 
+        # متصلي كدا عل النبي 
         # ── Dose & Usage Query Detection (الجرعة) ────────────────────────────
         if any(w in msg_cleaned for w in ["جرعه", "جرعة", "جرعته", "جرعاته", "الجرعات", "كام مره", "كم مرة", "اخدها ازاي", "اخده ازاي", "الجرعه", "الجرعة", "حبايه", "قرص", "كام سم"]):
             return {
@@ -688,11 +684,5 @@ def _get_bot():
 
 def get_chat_response(message: str, context=None, context_symptom=None) -> dict:
     return _get_bot().process_message(message, context, context_symptom)
-
-
-if __name__ == "__main__":
-    print(get_chat_response("عندي مغص شديد ومش قادر"))
-    print("=" * 40)
-    print(get_chat_response("معلومات عن عقار كونكور"))
-    print("=" * 40)
-    print(get_chat_response("الاعراض الجانبيه لده", context="Panadol Extra 500mg Tablets"))
+#  ضهريييييييييييي يمااااا
+#  الحمد لله    
