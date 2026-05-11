@@ -178,6 +178,47 @@ class DawaiChatbot:
             "اسنان":   "مسكن ومضاد التهاب موضعي لتخفيف آلام الأسنان واللثة.",
         }
 
+        # ── Valid Medicine Forms per Symptom ──────────────────────────────────
+        # الجدول ده بيحدد أشكال الدواء المنطقية لكل تصنيف مرضي
+        self.valid_forms = {
+            "صداع":    ["tablets", "syrup", "effervescent", "capsules"],
+            "سخونيه": ["tablets", "syrup", "effervescent", "suppositories"],
+            "برد":     ["tablets", "syrup", "effervescent", "capsules"],
+            "تنفس":    ["tablets", "syrup", "capsules", "spray", "drops"],
+            "غثيان":   ["tablets", "syrup", "ampoules"],
+            "مغص":     ["tablets", "syrup", "ampoules", "suppositories"],
+            "كحة":     ["syrup", "tablets", "drops"],
+            "اسهال":   ["tablets", "capsules", "syrup"],
+            "امساك":   ["tablets", "syrup", "suppositories"],
+            "عظام":    ["tablets", "ointment", "gel", "cream", "ampoules", "suppositories", "capsules"],
+            "حساسية":  ["tablets", "syrup", "cream", "ointment", "gel", "drops"],
+            "حروق":    ["cream", "ointment", "gel", "spray"],
+            "حموضة":   ["tablets", "syrup", "effervescent", "capsules"],
+            "سكر":     ["tablets", "ampoules"],
+            "ضغط":     ["tablets", "capsules"],
+            "قلب":     ["tablets", "capsules", "ampoules"],
+            "اعصاب":   ["tablets", "capsules", "ampoules"],
+            "اكتئاب":  ["tablets", "capsules"],
+            "خصوبة":   ["tablets", "capsules"],
+            "التهاب":  ["tablets", "capsules", "ampoules", "syrup"],
+            "مسالك":   ["tablets", "capsules", "effervescent"],
+            "مرارة":   ["tablets", "capsules"],
+            "فيتامين": ["tablets", "capsules", "syrup", "effervescent"],
+            "تخسيس":   ["tablets", "capsules"],
+            "شعر":     ["tablets", "capsules", "spray", "cream", "lotion"],
+            "بشرة":    ["cream", "ointment", "gel", "lotion", "tablets"],
+            "قطرة":    ["drops"],
+            "اسنان":   ["tablets", "gel", "cream"],
+        }
+
+        # ── Arabic names for forms (for user-facing messages) ─────────────────
+        self.form_arabic_names = {
+            "tablets": "أقراص", "syrup": "شراب", "effervescent": "فوار",
+            "capsules": "كبسولات", "suppositories": "لبوس", "ampoules": "حقن",
+            "ointment": "مرهم", "cream": "كريم", "gel": "جل",
+            "drops": "قطرة", "spray": "بخاخ", "lotion": "غسول",
+        }
+
         # ── Load NLP Model ───────────────────────────────────────────────────
         print("🤖 [Chatbot System] Loading Semantic NLP Model")
         try:
@@ -267,7 +308,7 @@ class DawaiChatbot:
     # ════════════════════════════════════════════════════════════════════════
     # MAIN MESSAGE PROCESSOR
     # ════════════════════════════════════════════════════════════════════════
-    def process_message(self, user_message: str, context_medicine=None) -> dict:
+    def process_message(self, user_message: str, context_medicine=None, context_symptom=None) -> dict:
         msg_cleaned = self.clean_text(user_message)
 
         # Guard: رسالة فاضية أو علامات بس
@@ -275,20 +316,24 @@ class DawaiChatbot:
             return {
                 "text": "عذراً، لم أفهم رسالتك. هل يمكنك توضيح سؤالك؟",
                 "context_medicine": context_medicine,
+                "matched_symptom": context_symptom,
             }
 
         # ── [4] Chit-Chat Detection ──────────────────────────────────────────
-        # تحية (بنتحقق منها الأول عشان "السلام عليكم" متتحسبش "سلام" بتاعت وداع)
-        if any(w in msg_cleaned for w in ["السلام", "سلام عليكم", "اهلا", "أهلا", "مرحبا", "ازيك", "عامل ايه", "عامله ايه", "ايه الاخبار", "صباح", "مسا"]):
-            return {"text": random.choice(self.greetings), "context_medicine": None}
+        # تحية (السلام عليكم المخصوصة)
+        if any(w in msg_cleaned for w in ["السلام", "سلام عليكم"]):
+            return {"text": "وعليكم السلام ورحمة الله وبركاته! أقدر أساعدك إزاي؟ ", "context_medicine": None, "matched_symptom": None}
+
+        if any(w in msg_cleaned for w in ["اهلا", "أهلا", "مرحبا", "ازيك", "ازيكم", "عامل ايه", "عامله ايه", "عامل اي", "عامله اي", "ايه الاخبار", "اي الاخبار", "اخبارك", "اخباركم", "صباح", "مسا"]):
+            return {"text": random.choice(self.greetings), "context_medicine": None, "matched_symptom": None}
 
         # وداع
         if any(w in msg_cleaned for w in ["باي", "مع السلامه", "مع السلامة", "وداعا", "تصبح على خير", "اقفل", "سلام"]):
-            return {"text": random.choice(self.farewells), "context_medicine": None}
+            return {"text": random.choice(self.farewells), "context_medicine": None, "matched_symptom": None}
 
         # شكر
         if any(w in msg_cleaned for w in ["شكرا", "شكراً", "ميرسي", "تسلم", "تسلمي", "يسلمو", "الف شكر", "يعطيك العافيه", "جزاك الله", "كتر خيرك"]):
-            return {"text": random.choice(self.thanks_responses), "context_medicine": context_medicine}
+            return {"text": random.choice(self.thanks_responses), "context_medicine": context_medicine, "matched_symptom": context_symptom}
 
         response_parts = []
         is_sickness    = False
@@ -306,6 +351,7 @@ class DawaiChatbot:
                     "يُمنع ترشيح أدوية في الحالات الحرجة حرصاً على حياتك."
                 ),
                 "context_medicine": None,
+                "matched_symptom": None,
             }
 
         # ── Safety Layer 2: PREGNANCY ────────────────────────────────────────
@@ -317,7 +363,94 @@ class DawaiChatbot:
                     "قد تسبب تشوهات للجنين أو مضاعفات للحمل. يرجى مراجعة الطبيب."
                 ),
                 "context_medicine": None,
+                "matched_symptom": None,
             }
+
+        # ── Contextual Alternative Medicine ──────────────────────────────────
+        alt_keywords = ["بديل", "غيره", "تاني", "بدل"]
+        form_keywords = {
+            "اقراص": "tablets", "حبوب": "tablets", "برشام": "tablets",
+            "شرب": "syrup", "دوا شرب": "syrup", "شراب": "syrup",
+            "حقن": "ampoules", "حقنه": "ampoules", "حقنة": "ampoules", "ابر": "ampoules",
+            "لبوس": "suppositories", "لبوسه": "suppositories",
+            "مرهم": "ointment", "كريم": "cream", "جل": "gel",
+            "قطرة": "drops", "قطره": "drops", "نقط": "drops",
+            "فوار": "effervescent"
+        }
+        
+        is_alt_request = any(k in msg_cleaned for k in alt_keywords)
+        requested_form = None
+        for ar_f, en_f in form_keywords.items():
+            if ar_f in msg_cleaned:
+                is_alt_request = True
+                requested_form = en_f
+                break
+
+        if is_alt_request and (context_medicine or context_symptom):
+            # ── الخطوة 1: لو طلب شكل معين، نشيك الأول لو منطقي للعرض ده ──
+            if requested_form and context_symptom:
+                valid = self.valid_forms.get(context_symptom, [])
+                if requested_form not in valid:
+                    available_ar = [self.form_arabic_names.get(f, f) for f in valid]
+                    return {
+                        "text": (
+                            f"مفيش **{self.form_arabic_names.get(requested_form, requested_form)}** "
+                            f"لعلاج **{context_symptom}**.\n"
+                            f"المتاح ليك: {', '.join(available_ar)}."
+                        ),
+                        "context_medicine": context_medicine,
+                        "matched_symptom": context_symptom,
+                    }
+
+            # ── الخطوة 2: ندور على البديل بناءً على العرض الأصلي ──
+            search_keys = self.symptom_keywords.get(context_symptom, []) if context_symptom else []
+
+            if search_keys:
+                uses_col = self.medicines_df['Uses'].astype(str)
+                name_ar_col = self.medicines_df['Name_AR'].astype(str)
+                keyword_mask = uses_col.apply(lambda u: any(k in u for k in search_keys))
+
+                alt_df = self.medicines_df[keyword_mask]
+                if context_medicine:
+                    alt_df = alt_df[alt_df['Name_EN'] != context_medicine]
+
+                if requested_form:
+                    form_mask_en = alt_df['Name_EN_lower'].str.contains(requested_form, na=False)
+                    form_mask_ar = alt_df['Name_AR'].apply(
+                        lambda n: any(af in n for af, ef in {
+                            'مرهم': 'ointment', 'كريم': 'cream', 'جل': 'gel',
+                            'شراب': 'syrup', 'اقراص': 'tablets', 'لبوس': 'suppositories',
+                            'حقن': 'ampoules', 'قطرة': 'drops', 'فوار': 'effervescent',
+                            'بخاخ': 'spray', 'كبسولات': 'capsules',
+                        }.items() if ef == requested_form)
+                    )
+                    alt_df = alt_df[form_mask_en | form_mask_ar]
+
+                if not alt_df.empty:
+                    best_alt = alt_df.iloc[0]
+                    form_text = f" على هيئة {self.form_arabic_names.get(requested_form, requested_form)}" if requested_form else ""
+                    return {
+                        "text": (
+                            f"أكيد! كبديل مناسب لـ **{context_medicine}**{form_text}، تقدر تستخدم **{best_alt['Name_EN']} ({best_alt['Name_AR']})**.\n\n"
+                            f" **دواعي الاستعمال:** {best_alt['Uses']}\n"
+                            f" **الأعراض الجانبية:** {best_alt['SideEffects']}\n\n"
+                            "* تنبيه: هذه معلومات إرشادية، ولا تغني عن استشارة الطبيب.*"
+                        ),
+                        "context_medicine": best_alt['Name_EN'],
+                        "matched_symptom": context_symptom,
+                    }
+                else:
+                    return {
+                        "text": f"للأسف مش لاقي بديل مناسب لـ **{context_medicine}** بنفس المواصفات اللي طلبتها في قاعدة البيانات بتاعتي.",
+                        "context_medicine": context_medicine,
+                        "matched_symptom": context_symptom,
+                    }
+            else:
+                return {
+                    "text": "عفواً، مش قادر أحدد العرض الأصلي عشان أدور على بديل مناسب. ممكن تقولي بتشتكي من إيه؟",
+                    "context_medicine": None,
+                    "matched_symptom": None,
+                }
 
         # ── Safety Layer 3: SEVERITY ─────────────────────────────────────────
         severity_keywords = ["شديد", "بموت", "مش قادر", "فظيع", "قوي جدا", "مش مستحمل"]
@@ -340,6 +473,7 @@ class DawaiChatbot:
                             "* ملاحظة طبية: يجب استشارة الطبيب أو الصيدلي دائماً.*"
                         ),
                         "context_medicine": context_medicine,
+                        "matched_symptom": context_symptom,
                     }
             if any(w in msg_cleaned for w in ["استخدام", "ليه", "دواعي", "بيعمل ايه", "فايدته"]):
                 med_info = self.medicines_df[med_filter]
@@ -351,6 +485,7 @@ class DawaiChatbot:
                             "* ملاحظة طبية: يجب الرجوع للطبيب لتحديد الجرعة المناسبة.*"
                         ),
                         "context_medicine": context_medicine,
+                        "matched_symptom": context_symptom,
                     }
 
         # ── Dose & Usage Query Detection (الجرعة) ────────────────────────────
@@ -361,6 +496,7 @@ class DawaiChatbot:
                     "الأفضل والأأمن إنك تستشير الصيدلي أو الطبيب المعالج عشان يحددلك الجرعة المظبوطة."
                 ),
                 "context_medicine": context_medicine,
+                "matched_symptom": context_symptom,
             }
 
         # ── Medicine Name Lookup ─────────────────────────────────────────────
@@ -391,6 +527,7 @@ class DawaiChatbot:
                     "* تنبيه: هذه معلومات إرشادية، ولا تغني عن استشارة الطبيب المُعالج.*"
                 ),
                 "context_medicine": row['Name_EN'],
+                "matched_symptom": context_symptom,
             }
 
         # ════════════════════════════════════════════════════════════════════
@@ -447,6 +584,7 @@ class DawaiChatbot:
                         f"لو ده قصدك، ياريت تكتبلي (عندي {best_sym}) عشان أتأكد وأقدر أجبلك العلاج المناسب. "
                     ),
                     "context_medicine": context_medicine,
+                    "matched_symptom": context_symptom,
                 }
 
         # ── Build Response ───────────────────────────────────────────────────
@@ -457,10 +595,12 @@ class DawaiChatbot:
                            ["طفل", "اطفال", "اطفال", "رضيع", "ابني", "بنتي", "عيالي", "عيل"])
 
         suggested_medicine = None
+        detected_symptom = context_symptom
 
         # نعالج العرض الأول كأولوية — وننوّه بالباقي
         if matched_symptoms:
             primary_sym, primary_keys = matched_symptoms[0]
+            detected_symptom = primary_sym
             extra_syms = [s[0] for s in matched_symptoms[1:]]
 
             # [3] لو في أعراض تانية نوّه بيها
@@ -530,10 +670,11 @@ class DawaiChatbot:
             return {
                 "text": "\n".join(response_parts),
                 "context_medicine": suggested_medicine,
+                "matched_symptom": detected_symptom,
             }
 
         # Fallback
-        return {"text": random.choice(self.unknown), "context_medicine": None}
+        return {"text": random.choice(self.unknown), "context_medicine": None, "matched_symptom": None}
 
 
 # ── Lazy Singleton (لا نعمل init وقت الـ import) ───────────────────────────
@@ -545,8 +686,8 @@ def _get_bot():
         _bot_instance = DawaiChatbot()
     return _bot_instance
 
-def get_chat_response(message: str, context=None) -> dict:
-    return _get_bot().process_message(message, context)
+def get_chat_response(message: str, context=None, context_symptom=None) -> dict:
+    return _get_bot().process_message(message, context, context_symptom)
 
 
 if __name__ == "__main__":
